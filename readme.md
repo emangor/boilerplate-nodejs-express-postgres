@@ -9,5 +9,7 @@ export DB_USER=''  DB='' DB_PASS='' DB_HOST='' DB_PORT='' DB_MAX_CLIENTS='' DB_I
 
 ## Run locally
 http://localhost:3000/healthcheck and root return healthcheck
+
 http://localhost:3000/servertime - returns servertime
+
 http://localhost:3000/transaction - deletes then inserts into your DB using a transaction
