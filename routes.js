@@ -16,6 +16,4 @@ router.get('/healthcheck', healthcheckController.healthcheck);
 
 // sampleController routes
 router.get('/servertime', sampleController.getTime);
-
-// sampleController routes
 router.get('/transaction', sampleController.sampleTransaction);

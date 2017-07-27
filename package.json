@@ -1,7 +1,7 @@
 {
     "name": "boilerplate-nodejs-express-postgres",
     "description": "example of nodejs/express/postgres project",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "author": "Erik Mangor",
     "dependencies": {
         "async": "2.3.0",

@@ -1,9 +1,9 @@
 const logger = require('../utils/logger');
-const userModel = require('.././models/model-sample');
+const sampleModel = require('.././models/model-sample');
 
 // sample controller
 module.exports.getTime = (req, res) => {
-    userModel.getTime(function(err, response){
+    sampleModel.getTime(function(err, response){
         if(err){
             logger.error(`getTime error: ${err}`);
             res.status(500).json({status:'error', message:err, statusCode: 500});
@@ -15,7 +15,7 @@ module.exports.getTime = (req, res) => {
 
 // sample controller using transaction
 module.exports.sampleTransaction = (req, res) => {
-    userModel.sampleTransaction(function(err, response){
+    sampleModel.sampleTransaction(function(err, response){
         if(err){
             logger.error(`sampleTransaction error: ${err}`);
             res.status(500).json({status:'error', message:err, statusCode: 500});
