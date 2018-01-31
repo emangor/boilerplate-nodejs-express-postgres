@@ -1,17 +1,17 @@
 {
     "name": "boilerplate-nodejs-express-postgres",
     "description": "example of nodejs/express/postgres project",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "author": "Erik Mangor",
     "dependencies": {
-        "async": "2.3.0",
-        "body-parser": "1.17.2",
-        "express": "4.15.3",
-        "pg": "6.4.0",
-        "winston": "2.3.1"
+        "async": "2.6.0",
+        "body-parser": "1.18.2",
+        "express": "4.16.2",
+        "pg": "7.4.1",
+        "winston": "2.4.0"
     },
     "engines": {
-        "node": "6.11.1"
+        "node": "8.9.4"
     },
     "repository": {
         "type": "git",
