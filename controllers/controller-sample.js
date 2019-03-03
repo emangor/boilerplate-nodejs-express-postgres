@@ -1,26 +1,24 @@
-const logger = require('../utils/logger');
-const sampleModel = require('.././models/model-sample');
+const logger = require('./../utils/logger');
+const sampleModel = require('./../models/model-sample');
 
 // sample controller
-module.exports.getTime = (req, res) => {
-    sampleModel.getTime(function(err, response){
-        if(err){
-            logger.error(`getTime error: ${err}`);
-            res.status(500).json({status:'error', message:err, statusCode: 500});
-        } else {
-            res.status(200).json(response);
-        }
-    });
+module.exports.getTime = async (req, res) => {
+    try {
+        let result = await sampleModel.getTime();
+        res.status(200).json(result.rows);
+    } catch (error) {
+        logger.error(`getTime error: ${error.message}`);
+        res.status(500).json({status:'error', message: error.message, statusCode: 500});
+    }
 }
 
 // sample controller using transaction
-module.exports.sampleTransaction = (req, res) => {
-    sampleModel.sampleTransaction(function(err, response){
-        if(err){
-            logger.error(`sampleTransaction error: ${err}`);
-            res.status(500).json({status:'error', message:err, statusCode: 500});
-        } else {
-            res.status(200).json({status:'ok', message:response, statusCode: 200});
-        }
-    });
+module.exports.sampleTransaction = async (req, res) => {
+    try {
+        let result = await sampleModel.sampleTransaction();
+        res.status(200).json({status:'ok', message: result, statusCode: 200});
+    } catch (error) {
+        logger.error(`sampleTransaction error: ${error.message}`);
+        res.status(500).json({status:'error', message: error.message, statusCode: 500});
+    }
 }

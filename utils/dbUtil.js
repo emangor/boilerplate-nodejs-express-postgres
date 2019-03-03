@@ -1,5 +1,4 @@
 const pg = require('pg');
-const async = require('async');
 const config = require('../config.js');
 const logger = require('./logger');
 
@@ -27,41 +26,29 @@ pool.on('error', function (err, client) {
  * @param data: the data to be stored
  * @return result
  */
-module.exports.sqlToDB = (sql, data, callback) => {
+module.exports.sqlToDB = async (sql, data) => {
     logger.debug(`sqlToDB() sql: ${sql} | data: ${data}`);
-    pool.query(sql, data, function(err, result) {
-        if (err) {
-            logger.error(`sqlToDB() pool.query error: ${err}`);
-            callback(err);
-        } else {
-            logger.debug(`sqlToDB(): ${result.command} | ${result.rowCount}`);
-            callback(null, result.rows);
-        }
-    });
+    try {
+        let result = await pool.query(sql, data);
+        return result;
+    } catch (error) {
+        throw new Error(error.message);
+    }
 }
 
 /*
  * Retrieve a SQL client with transaction from connection pool. If the client is valid, either
  * COMMMIT or ROALLBACK needs to be called at the end before releasing the connection back to pool.
  */
-module.exports.getTransaction = (callback) => {
+module.exports.getTransaction = async () => {
     logger.debug(`getTransaction()`);
-    pool.connect(function(err, client, done) {
-        logger.debug(`getTransaction() | pool.connect()`);
-        if (err) {
-            logger.error(`getTransaction() failed: ${err}`);
-            callback(err);
-        } else {
-            client.query('BEGIN', function(err) {
-                if (err) {
-                    done();
-                    callback(err);
-                } else {
-                    callback(null, client, done);
-                }
-            });
-        }
-    });
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        return client;
+    } catch (error) {
+        throw new Error(error.message);
+    }
 }
 
 /* 
@@ -70,18 +57,16 @@ module.exports.getTransaction = (callback) => {
  * @param data: the data to be stored
  * @return result
  */
-module.exports.sqlExecSingleRow = (client, sql, data, callback) => {
+module.exports.sqlExecSingleRow = async (client, sql, data) => {
     logger.debug(`sqlExecSingleRow() sql: ${sql} | data: ${data}`);
-
-    client.query(sql, data, function(err, result) {
-        if (err) {
-            logger.debug(`sqlExecSingleRow() error: ${err} | sql: ${sql} | data: ${data}`);
-            callback(err);
-        } else {
-            logger.debug(`sqlExecSingleRow(): ${result.command} | ${result.rowCount}`);
-            callback(null, result);
-        }
-    });
+    try {
+        let result = await client.query(sql, data);
+        logger.debug(`sqlExecSingleRow(): ${result.command} | ${result.rowCount}`);
+        return result
+    } catch (error) {
+        logger.error(`sqlExecSingleRow() error: ${error.message} | sql: ${sql} | data: ${data}`);
+        throw new Error(error.message);
+    }
 }
 
 /*
@@ -90,60 +75,52 @@ module.exports.sqlExecSingleRow = (client, sql, data, callback) => {
  * @param data: the data to be stored
  * @return result
  */
-module.exports.sqlExecMultipleRows = (client, sql, data, callback) => {
+module.exports.sqlExecMultipleRows = async (client, sql, data) => {
     logger.debug(`inside sqlExecMultipleRows()`);
-    var recordCount = 0;
-    //connect to Postgres
     if (data.length !== 0) {
-        //use asyncSeries so each item in loop needs callback to progress
-        async.eachSeries(data, function(item, itemCallback) {            
-            logger.debug(`sqlExecMultipleRows() eachSeries data: ${data}`);
-            logger.debug(`sqlExecMultipleRows() eachSeries item: ${item}`);
-            //try to insert/update/delete record
-            client.query(sql, item, function(err, result) {
-                logger.debug(`sqlExecMultipleRows() client.query() sql: ${sql} | item: ${item}`);
-                //if no error - continue
-                if (err) {
-                    logger.debug(`sqlExecMultipleRows() error: ${err} | sql: ${sql} | item: ${item}`);
-                    callback(err);
-                } else {
-                    recordCount++;
-                    //if final item, close connection and send callback
-                    if (recordCount === data.length) {
-                        result.rowCount = recordCount
-                        callback(null, result);
-                    } else {
-                        //callback for asyncSeries to continue looping if not last item
-                        itemCallback();
-                    }
-                }
-            });
-        });        
+        for(let item of data) {
+            try {
+                logger.debug(`sqlExecMultipleRows() item: ${item}`);
+                logger.debug(`sqlExecMultipleRows() sql: ${sql}`);
+                await client.query(sql, item);
+            } catch (error) {
+                logger.error(`sqlExecMultipleRows() error: ${error}`);
+                throw new Error(error.message);
+            }
+        }
     } else {
-        logger.error(`sqlExecMultipleRows(): No data available`)
-        callback('No data available');
+        logger.error(`sqlExecMultipleRows(): No data available`);
+        throw new Error('sqlExecMultipleRows(): No data available');
     }
-
-
 }
 
 /*
  * Rollback transaction
  */
-module.exports.rollback = (client, done) => {
+module.exports.rollback = async (client) => {
     if (typeof client !== 'undefined' && client) {
-        logger.info(`sql transaction rollback`);
-        client.query('ROLLBACK', done);
+        try {
+            logger.info(`sql transaction rollback`);
+            await client.query('ROLLBACK');
+        } catch (error) {
+            throw new Error(error.message);
+        } finally {
+            client.release();
+        }
     } else {
         logger.warn(`rollback() not excuted. client is not set`);
     }
-
 }
 
 /*
  * Commit transaction
  */
-module.exports.commit = (client, done) => {
-    logger.debug(`sql transaction committed`);
-    client.query('COMMIT', done);
+module.exports.commit = async (client) => {
+    try {
+        await client.query('COMMIT');
+    } catch (error) {
+        throw new Error(error.message);
+    } finally {
+        client.release();
+    }
 }

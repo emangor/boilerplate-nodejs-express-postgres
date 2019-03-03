@@ -1,55 +1,40 @@
 const logger = require('../utils/logger');
 const dbUtil = require('../utils/dbUtil');
+const transactionSuccess = 'transaction success';
 
 /* 
  * sample query
  * @return server time
  */
-module.exports.getTime = (callback) => {
+module.exports.getTime = async () => {
     let sql = "SELECT NOW()";
     let data = [];
-    dbUtil.sqlToDB(sql, data, function(err, result){
-        if (err){
-            logger.error(`getTime() error: ${err}`);  
-            callback(err, null);
-        } else {
-            callback(null, result);
-        }
-    }); 
+    try {
+        result = await dbUtil.sqlToDB(sql, data);
+        return result;
+    } catch (error) {
+        throw new Error(error.message);
+    }
 }
 
 /* 
  * sample query using transactions
  * @return transaction success
  */
-module.exports.sampleTransaction = (callback) => {
+module.exports.sampleTransaction = async () => {
     let singleSql = "DELETE FROM TEST";
     let multiSql = "INSERT INTO TEST (testcolumn) VALUES ($1)";
     let singleData = [];
-    let multiData = [['jeg'], ['elsker'], ['smørrebrø']];
-    dbUtil.getTransaction(function(err, client, done) {
-        if (err) {
-            logger.error(`sampleTransaction() error: ${err}`);
-            callback(err);
-        } else {
-            dbUtil.sqlExecSingleRow(client, singleSql, singleData, function(err, dbResult){
-                if (err) {
-                    logger.error(`sampleTransaction() sqlExecSingleRow() error: ${err}`);
-                    done();
-                    callback(err);
-                } else {
-                    dbUtil.sqlExecMultipleRows(client, multiSql, multiData, function (err, dbResult) {
-                        if (err) {
-                            dbUtil.rollback(client, done);
-                            callback(err);
-                        } else {
-                            dbUtil.commit(client, done);
-                            logger.info(`sampleTransaction success`);
-                            callback(null, 'transaction success');
-                        }
-                    });
-                }
-            });
-        }
-    }); 
+    let multiData = [['node.js'], ['is'], ['fun']];
+    let client = await dbUtil.getTransaction();
+    try {
+        await dbUtil.sqlExecSingleRow(client, singleSql, singleData);
+        await dbUtil.sqlExecMultipleRows(client, multiSql, multiData);
+        await dbUtil.commit(client);
+        return transactionSuccess;
+    } catch (error) {
+        logger.error(`sampleTransactionModel error: ${error.message}`);
+        await dbUtil.rollback(client);
+        throw new Error(error.message);
+    }
 }

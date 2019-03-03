@@ -1,4 +1,4 @@
-const package = require('.././package');
+const package = require('./../package');
 
 module.exports.healthcheck = (req, res) => {
     res.json({
