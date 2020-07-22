@@ -1,4 +1,4 @@
-const pg = require('pg');
+const { Pool } = require('pg');
 const config = require('../config.js');
 const logger = require('./logger');
 
@@ -12,7 +12,7 @@ const pgconfig = {
     idleTimeoutMillis: config.db.idleTimeoutMillis
 }
 
-const pool = new pg.Pool(pgconfig);
+const pool = new Pool(pgconfig);
 
 logger.info(`DB Connection Settings: ${JSON.stringify(pgconfig)}`);
 
